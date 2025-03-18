@@ -1,5 +1,6 @@
 import {User} from "../models/user.js"
 import argon2 from "argon2"
+import jwt from "jsonwebtoken"
 import "dotenv/config"
 const registerUser=async(req,res)=>{
     try{
@@ -17,4 +18,22 @@ const registerUser=async(req,res)=>{
         res.status(500).json({message:"Server error"})
     }
 }
-export {registerUser}
+const login=async(req,res)=>{
+    try{
+        const {email,password} =req.body
+        const findUser=await User.findOne({email})
+        if(!findUser){
+            return res.status(400).json({message:"User not found"})
+        }
+        const valid=await argon2.verify(findUser.password,password)
+        if(!valid){
+            return res.status(400).json({message:"Invalid credentials"})
+        }
+        const token=jwt.sign({userId:findUser.userId},process.env.SECRET_KEY)
+        res.status(200).json({message:"Logged in successfully",token})
+    }catch(err){
+        console.error(err)
+        res.status(500).json({message:"Server error"})
+    }
+}
+export {registerUser,login}
